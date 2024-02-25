@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:16.2-alpine
+    environment:
+      POSTGRES_USER: rinha
+      POSTGRES_PASSWORD: rinha
+      POSTGRES_DB: rinha
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    # Optionally, you can specify health checks for the database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rinha"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+
   app1:
     build: .
     ports:
@@ -8,6 +26,13 @@ services:
     environment:
       - PORT=3000
       - SERVER_ID=app1
+      - DB_HOST=db
+      - DB_USER=rinha
+      - DB_PASSWORD=rinha
+      - DB_NAME=rinha
+      - DB_PORT=5432
+    depends_on:
+      - db
 
   app2:
     build: .
@@ -16,6 +41,13 @@ services:
     environment:
       - PORT=3001
       - SERVER_ID=app2
+      - DB_HOST=db
+      - DB_USER=rinha
+      - DB_PASSWORD=rinha
+      - DB_NAME=rinha
+      - DB_PORT=5432
+    depends_on:
+      - db
 
   nginx:
     image: nginx:alpine
@@ -26,3 +58,6 @@ services:
     depends_on:
       - app1
       - app2
+
+volumes:
+  postgres_data:
