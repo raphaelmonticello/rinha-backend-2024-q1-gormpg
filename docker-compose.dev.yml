@@ -23,7 +23,7 @@ services:
           memory: '200MB'
 
   app1: &api
-    image: raphamonticello/rinha-backend-2024-q1-gormpg-app:latest
+    build: .
     container_name: api1
     ports:
       - "3000"
