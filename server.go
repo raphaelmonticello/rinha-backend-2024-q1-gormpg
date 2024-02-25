@@ -38,8 +38,8 @@ func initDatabase() {
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
 	port := os.Getenv("DB_PORT")
-	sslmode := "disable"            // Usually, for local development, SSL mode is disabled. Adjust as necessary.
-	timeZone := "America/Sao_Paulo" // Make sure to use the correct timezone
+	sslmode := "disable"
+	timeZone := "America/Sao_Paulo"
 
 	// Construct the DSN (Data Source Name)
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s", host, user, password, dbname, port, sslmode, timeZone)
@@ -50,6 +50,21 @@ func initDatabase() {
 	if err != nil {
 		panic("failed to connect database")
 	}
+
+	// Get generic database object sql.DB to use its functions
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to get database object")
+	}
+
+	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
+	sqlDB.SetMaxIdleConns(1)
+
+	// SetMaxOpenConns sets the maximum number of open connections to the database.
+	sqlDB.SetMaxOpenConns(1)
+
+	// SetConnMaxLifetime sets the maximum amount of time a connection may be reused.
+	sqlDB.SetConnMaxLifetime(0)
 
 	// Migrate the schema
 	db.AutoMigrate(&Cliente{}, &Transacao{})
@@ -71,7 +86,6 @@ func seedClientes() {
 		}
 
 		for _, cliente := range clientes {
-			// Check if the Cliente already exists
 			var tempCliente Cliente
 			if db.First(&tempCliente, cliente.ID).Error == gorm.ErrRecordNotFound {
 				db.Create(&cliente) // Create only if not exists
@@ -105,7 +119,6 @@ func main() {
 	}
 }
 
-// Handler for creating transactions
 func transacaoHandler(c *fiber.Ctx) error {
 	var transacao Transacao
 	clienteID, _ := strconv.Atoi(c.Params("id"))
@@ -170,7 +183,6 @@ func transacaoHandler(c *fiber.Ctx) error {
 	})
 }
 
-// Handler for fetching account statement
 func extratoHandler(c *fiber.Ctx) error {
 	clienteID, _ := strconv.Atoi(c.Params("id"))
 
@@ -185,7 +197,6 @@ func extratoHandler(c *fiber.Ctx) error {
 	var ultimasTransacoes []Transacao
 	db.Where("cliente_id = ?", clienteID).Order("created_at desc").Limit(10).Find(&ultimasTransacoes)
 
-	// Prepare the response
 	extrato := fiber.Map{
 		"saldo": fiber.Map{
 			"total":        cliente.Saldo,

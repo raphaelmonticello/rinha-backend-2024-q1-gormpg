@@ -11,16 +11,20 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    # Optionally, you can specify health checks for the database
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rinha"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
+    deploy:
+      resources:
+        limits:
+          cpus: '0.9'
+          memory: '200MB'
 
-  app1:
+  app1: &api
     build: .
+    container_name: api1
     ports:
       - "3000"
     environment:
@@ -33,21 +37,15 @@ services:
       - DB_PORT=5432
     depends_on:
       - db
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: '150MB'
 
   app2:
-    build: .
-    ports:
-      - "3001"
-    environment:
-      - PORT=3001
-      - SERVER_ID=app2
-      - DB_HOST=db
-      - DB_USER=rinha
-      - DB_PASSWORD=rinha
-      - DB_NAME=rinha
-      - DB_PORT=5432
-    depends_on:
-      - db
+    <<: *api
+    container_name: api2
 
   nginx:
     image: nginx:alpine
@@ -58,6 +56,16 @@ services:
     depends_on:
       - app1
       - app2
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: '50MB'
 
 volumes:
   postgres_data:
+
+networks:
+  default:
+    driver: bridge
+    name: rinha-nginx-2024q1
